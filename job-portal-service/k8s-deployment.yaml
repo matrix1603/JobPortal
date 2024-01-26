@@ -1,0 +1,164 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: job-portal-service-l # IN THIS WE SPECIFY THE APP NAME RELATED INFORMATION
+  namespace: job-portal-service-group
+spec: # IN THIS WE SPECIFY THE INFORMATION OF OUR COMPONENT
+  selector:
+    matchLabels: # SPECIFY WITH WHICH COMPONENTS WE NEED TO CONNECT job-portal-service-k8s
+      app: job-portal
+  replicas: 2 # CREATE TWO PODS OF OUR APPLICATION
+  template:
+    metadata:
+      labels:
+        app: job-portal
+    spec:
+      containers:
+        - name: job-portal-service-original
+          image: jobportalcontainerregistry.azurecr.io/jps:107
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9090 # PORT ON WHICH OUR CONTAINER WILL RUN IN CLUSTER
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: DB_URL
+
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: DB_USERNAME
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: DB_PASSWORD
+
+            - name: APP_ID_URI
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: APP_ID_URI
+
+            - name: BASE_URI
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: BASE_URI
+
+
+            - name: CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: CLIENT_ID
+
+            - name: CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: CLIENT_SECRET
+
+            - name: TENANT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: TENANT_ID
+
+            - name: FLOW
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: FLOW
+
+            - name: RABBITMQ_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: RABBITMQ_HOST
+
+            - name: RABBITMQ_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: RABBITMQ_USERNAME
+
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: RABBITMQ_PASSWORD
+
+            - name: TRACE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: TRACE_URL
+
+            - name: PROFILE
+              valueFrom:
+                secretKeyRef:
+                  name: jps-secret
+                  key: PROFILE
+
+          readinessProbe: # PROBE TO CHECK WEATHER OUR CONTAINER IS READY TO ACCEPT TRAFFIC OR NOT
+            httpGet:
+              path: /actuator/health/readiness
+              port: 9090
+            initialDelaySeconds: 7
+            periodSeconds: 10
+
+          livenessProbe: # PROBE TO CHECK OUR CONTAINER IS LIVE/WORKING OR NOT
+            httpGet:
+              path: /actuator/health/liveness
+              port: 9090
+            initialDelaySeconds: 7
+            periodSeconds: 10
+
+
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: job-portal-service-s
+  namespace: job-portal-service-group
+spec:
+  selector:
+    app: job-portal
+  ports:
+    - protocol: "TCP"
+      port: 90
+      nodePort: 30002
+      targetPort: 9090
+
+
+  type: LoadBalancer
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: jps-secret
+  namespace: job-portal-service-group
+type: Opaque
+data:
+  DB_URL: amRiYzpzcWxzZXJ2ZXI6Ly9qb2Jwcy5kYXRhYmFzZS53aW5kb3dzLm5ldDoxNDMzO2RhdGFiYXNlPWpvYnBzZGI7ZW5jcnlwdD1mYWxzZTt0cnVzdFNlcnZlckNlcnRpZmljYXRlPXRydWU=
+  DB_USERNAME: am9icHNAam9icHM=
+  DB_PASSWORD: c3VfMTJqaWo=
+  APP_ID_URI: aHR0cHM6Ly9qb2Jwb3J0YWxzLm9ubWljcm9zb2Z0LmNvbS8xODk2ZmY2Ni04MzFjLTRjOWEtYjI0MS1lZDFjZmI5YThiMmU=
+  BASE_URI: aHR0cHM6Ly9qb2Jwb3J0YWxzLmIyY2xvZ2luLmNvbQ==
+  CLIENT_ID: MTg5NmZmNjYtODMxYy00YzlhLWIyNDEtZWQxY2ZiOWE4YjJl
+  CLIENT_SECRET: UkF+OFF+MmFpT1NKb09SOF93VDVYcU9OYXZwd2NJNGJZV2VwTWNDdw==
+  TENANT_ID: NjA1MmM3YjMtOThjYy00NmY2LWEzMGEtN2E0NTE4Y2IyZmE2
+  FLOW: QjJDXzFfU1VTSQ==
+  RABBITMQ_HOST: MjAuMjM5LjU4LjE5MA==
+  RABBITMQ_USERNAME: anBz
+  RABBITMQ_PASSWORD: c3VfMTJqaWo=
+  TRACE_URL: aHR0cDovLzQuMTU3LjYwLjIwNzo0MzE4L3YxL3RyYWNlcw==
+  PROFILE: cHJvZA==

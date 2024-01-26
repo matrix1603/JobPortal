@@ -1,0 +1,79 @@
+trigger:
+- feature/add-project 
+
+pool: Default
+
+stages:
+
+  - stage: BuildAndPushLatestImage
+    jobs:
+    - job: BuildAndPushLatestImage
+      displayName: Build and push the latest docker image
+      steps:
+              
+        - task: Maven@3
+          displayName: Building and testing the latest code
+          inputs:
+            mavenPomFile: 'job-portal-service/pom.xml'
+            javaHomeOption: 'JDKVersion'
+            jdkVersionOption: 1.17
+            jdkArchitectureOption: 'x64'
+            goals: 'clean package'
+            options: '-DRABBITMQ_HOST=$(rabbitmqhost) -DRABBITMQ_USERNAME=$(rabbitmqusername) -DRABBITMQ_PASSWORD=$(rabbitmqpassword) -DDB_URL=$(dburi) -DDB_USERNAME=$(dbuser) -DDB_PASSWORD=$(dbpassword) -DAPP_ID_URI=$(appiduri) -DBASE_URI=$(baseuri) -DCLIENT_ID=$(clientid) -DCLIENT_SECRET=$(clientsecret) -DTENANT_ID=$(tenantid) -DFLOW=$(flow) -DTRACE_URL=$(traceurl) -DPROFILE=$(profile) -DTEST_DB_URL=$(testdburi) -DTEST_DB_USERNAME=$(testdbuser) -DTEST_DB_PASSWORD=$(testdbpassword)'
+          
+        - task: Docker@2
+          displayName: Pushing the latest image to Azure Container Registry
+          inputs:
+            containerRegistry: 'JobPortalContainerRegistry'
+            repository: 'jps'
+            command: 'buildAndPush'
+            Dockerfile: '$(Build.SourcesDirectory)/job-portal-service/Dockerfile'
+            buildContext: '$(Build.SourcesDirectory)/job-portal-service'
+            tags: '$(Build.BuildId)' 
+
+  - stage: ApplyClusterChanges
+    jobs:
+      - job: ApplyClusterChanges
+        displayName: Applying Latest changes to cluster according to Kubernetes deployment yaml file
+        steps:
+        - task: Kubernetes@1
+          inputs:
+            connectionType: "Azure Resource Manager" 
+            azureSubscriptionEndpoint: "Azure subscription 1(e9a0da7b-2b3e-4c77-9d7b-f24aeb59fff7)"
+            azureResourceGroup: 'JpserviceResourceGroup'
+            kubernetesCluster: 'JpCluster'
+            command: 'apply'
+            namespace: 'job-portal-service-group'
+            containerRegistryType: 'Azure Container Registry'
+            arguments: '-f $(Build.SourcesDirectory)/job-portal-service/k8s-deployment.yaml'
+
+  - stage: DeployeToKubernetes 
+    jobs: 
+      - job: DeployeLatestImageOnK8s 
+        displayName: Deploye latest image to kubernetes 
+        steps:
+        - task: Kubernetes@1
+          inputs:
+            connectionType: "Azure Resource Manager"
+            azureSubscriptionEndpoint: "Azure subscription 1(e9a0da7b-2b3e-4c77-9d7b-f24aeb59fff7)"
+            azureResourceGroup: 'JpserviceResourceGroup'
+            kubernetesCluster: 'JpCluster'
+            command: 'set'
+            namespace: 'job-portal-service-group'
+            containerRegistryType: 'Azure Container Registry'
+            arguments: 'image deployment/job-portal-service-l job-portal-service-original=jobportalcontainerregistry.azurecr.io/jps:$(Build.BuildId)'
+            
+
+
+              
+              
+              
+            
+            
+
+
+      
+
+
+
+

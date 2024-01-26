@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/job-portal-service/.vs/job-portal-service/FileContentIndex/20e6e548-5b33-47b1-8443-8a11ca7a64e0.vsidx
+/.vs
+/.idea
+/job-portal-service/.mvn/
+/job-portal-service/.vs/
+/job-portal-service/logs/
+/job-portal-service/src/test/resources/.cucumber+/
+/job-portal-service/logs/
+/logs/
+
