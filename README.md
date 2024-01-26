@@ -13,7 +13,7 @@ Hibernate
 
 RabbitMQ
 
-Azure Auth0 (B2C) 
+OAuth, Azure B2C
 
 Azure Devops CI/CD Pipelines
 
